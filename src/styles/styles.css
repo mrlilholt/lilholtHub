@@ -1,0 +1,114 @@
+/* Import the Poppins font */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --primary-color: #3498db; /* Blue */
+  --secondary-color: #ffffff; /* White */
+  --accent-color: #95a5a6; /* Gray */
+  --glass-bg: rgba(255, 255, 255, 0.15); /* Translucent background for cards */
+  --glass-border: rgba(255, 255, 255, 0.25); /* Light border for glass effect */
+  --card-radius: 12px;
+  --shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: var(--secondary-color);
+  background-image: url('/public/background.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  color: var(--accent-color);
+  line-height: 1.6;
+  padding: 20px;
+}
+
+/* Container for overall layout */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  /* Remove or comment out the background-image properties here */
+  /* background-image: url('/public/background.png'); */
+  background-color: transparent;
+  min-height: 100vh;
+}
+
+/* Card component styling with a glassy look */
+.card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 20px;
+  margin-bottom: 20px;
+  color: var(--accent-color);
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--primary-color);
+  margin-bottom: 10px;
+}
+
+/* Paragraphs */
+p {
+  margin-bottom: 10px;
+}
+
+/* Buttons */
+button {
+  background-color: var(--primary-color);
+  color: var(--secondary-color);
+  border: none;
+  padding: 10px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #2980b9;
+}
+
+/* Form elements */
+input, select, textarea {
+  width: 100%;
+  padding: 8px;
+  margin-top: 5px;
+  border: 1px solid var(--accent-color);
+  border-radius: 4px;
+  background-color: transparent;
+  color: var(--accent-color);
+}
+
+label {
+  font-weight: 500;
+  margin-bottom: 5px;
+  display: block;
+}
+
+form > div {
+  margin-bottom: 15px;
+}
+
+/* Utility class for centered text */
+.text-center {
+  text-align: center;
+}
+
+.task-item .task-attributes {
+  display: none;
+}
+
+.task-item:hover .task-attributes {
+  display: block;
+}

@@ -1,0 +1,14 @@
+[build]
+  # Command to build your project
+  command = "npm run build"
+  # Folder to publish (output of the build command)
+  publish = "build"
+
+[context.production.environment]
+  NODE_ENV = "production"
+
+[[redirects]]
+  # Redirect all routes to index.html so that React Router can handle routing
+  from = "/*"
+  to = "/index.html"
+  status = 200
