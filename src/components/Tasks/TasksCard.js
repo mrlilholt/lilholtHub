@@ -209,7 +209,8 @@ const TasksCard = () => {
         ))}
       </div>
 
-      <div className="tasks-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
+      {/* Removed inline styles so that the CSS file can control layout */}
+      <div className="tasks-grid">
         {familyMembers.map(member => (
           <div key={`grid-${member}`} className="member-tasks" style={{ border: '1px solid #ccc', padding: '10px', borderRadius: '8px' }}>
             <h4 style={{ textAlign: 'center', marginBottom: '10px' }}>
