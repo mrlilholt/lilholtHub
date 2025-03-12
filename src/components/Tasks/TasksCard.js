@@ -12,12 +12,15 @@ const TasksCard = () => {
   const [category, setCategory] = useState('');
   const [difficulty, setDifficulty] = useState(1);
   const [assignedTo, setAssignedTo] = useState('');
+  const [repeatDaily, setRepeatDaily] = useState(false); // New state for repeat option
   const [tasks, setTasks] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [detailedModalOpen, setDetailedModalOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
   const [completedTasks, setCompletedTasks] = useState({});
   const [points, setPoints] = useState({});
+  const [repeatConfirmOpen, setRepeatConfirmOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
 
   const familyMembers = ['Mira', 'Shea', 'Daddy', 'Mommy'];
 
@@ -53,6 +56,7 @@ const TasksCard = () => {
     setCategory('');
     setDifficulty(1);
     setAssignedTo('');
+    setRepeatDaily(false); // Reset repeat flag
   };
 
   const openDetailedModalFor = (member) => {
@@ -77,6 +81,7 @@ const TasksCard = () => {
         category: category || null,
         difficulty: difficulty ? Number(difficulty) : null,
         assignedTo,
+        repeatDaily, // Store the repeat flag
         createdAt: new Date()
       });
       closeModal();
@@ -99,9 +104,61 @@ const TasksCard = () => {
 
   const handleDelete = async (taskId) => {
     try {
-      await deleteDoc(doc(db, 'tasks', taskId));
+      const taskDoc = tasks.find(t => t.id === taskId);
+      if (taskDoc.repeatDaily) {
+        // Instead of using window.confirm, open a custom confirm modal.
+        setSelectedTask(taskDoc);
+        setRepeatConfirmOpen(true);
+      } else {
+        await deleteDoc(doc(db, 'tasks', taskId));
+      }
     } catch (error) {
       console.error('Error deleting task:', error);
+    }
+  };
+
+  // Called when user clicks "Keep" (meaning: keep the repeat, delete current instance and schedule tomorrow)
+  const handleConfirmKeep = async () => {
+    try {
+      // Delete the current instance.
+      await deleteDoc(doc(db, 'tasks', selectedTask.id));
+      // Calculate tomorrow's due date.
+      let newDueDate;
+      if (selectedTask.dueDate) {
+        newDueDate = new Date(selectedTask.dueDate.seconds * 1000);
+        newDueDate.setDate(newDueDate.getDate() + 1);
+      } else {
+        newDueDate = new Date();
+        newDueDate.setDate(newDueDate.getDate() + 1);
+      }
+      // Add a new repeating task for tomorrow.
+      await addDoc(collection(db, 'tasks'), {
+        title: selectedTask.title,
+        dueDate: newDueDate,
+        priority: selectedTask.priority,
+        category: selectedTask.category,
+        difficulty: selectedTask.difficulty,
+        assignedTo: selectedTask.assignedTo,
+        repeatDaily: true,
+        createdAt: new Date()
+      });
+    } catch (error) {
+      console.error('Error keeping repeating task:', error);
+    } finally {
+      setRepeatConfirmOpen(false);
+      setSelectedTask(null);
+    }
+  };
+
+  // Called when user clicks "Delete" (permanently delete the task)
+  const handleConfirmDelete = async () => {
+    try {
+      await deleteDoc(doc(db, 'tasks', selectedTask.id));
+    } catch (error) {
+      console.error('Error permanently deleting task:', error);
+    } finally {
+      setRepeatConfirmOpen(false);
+      setSelectedTask(null);
     }
   };
 
@@ -122,6 +179,13 @@ const TasksCard = () => {
       }
       return newCompletedTasks;
     });
+  };
+
+  const resetPointsForMember = (member) => {
+    setPoints((prevPoints) => ({
+      ...prevPoints,
+      [member]: 0
+    }));
   };
 
   const tasksByMember = {};
@@ -183,10 +247,74 @@ const TasksCard = () => {
             <button onClick={() => openDetailedModalFor(member)} style={{ marginTop: '10px', display: 'block', width: '100%' }}>
               Detailed List
             </button>
+            {/* Reset Points button now at the bottom of each card */}
+            <button onClick={() => resetPointsForMember(member)} style={{ marginTop: '10px', display: 'block', width: '100%' }}>
+              Reset Points
+            </button>
           </div>
         ))}
       </div>
+      {/* Detailed List Modal */}
+      {detailedModalOpen && selectedMember && (
+        <div
+          className="modal-overlay"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center'
+          }}
+        >
+          <div 
+            className="modal-content" 
+            style={{
+              backgroundColor: 'white',
+              padding: '20px',
+              borderRadius: '4px',
+              maxWidth: '600px',
+              width: '100%'
+            }}
+          >
+            <h3>{selectedMember}'s Detailed Task List</h3>
+            <ul className="task-list" style={{ listStyle: 'none', padding: 0 }}>
+              {tasksByMember[selectedMember].length > 0 ? (
+                tasksByMember[selectedMember].map(task => (
+                  <li key={task.id} className="task-item" style={{ marginBottom: '10px', padding: '10px', borderRadius: '4px', backgroundColor: '#f9f9f9' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <strong>{task.title}</strong>
+                        <div className="task-attributes" style={{ fontSize: '0.8em', color: '#555' }}>
+                          Due: {task.dueDate ? new Date(task.dueDate.seconds * 1000).toLocaleDateString() : 'N/A'}
+                          <br />
+                          Priority: {task.priority || 'N/A'} | Category: {task.category || 'N/A'} | Difficulty: {task.difficulty || 'N/A'}
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => handleDelete(task.id)} 
+                        style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                      >
+                        <FaTrashAlt style={{ color: 'red' }} />
+                      </button>
+                    </div>
+                  </li>
+                ))
+              ) : (
+                <li style={{ textAlign: 'center', color: '#999' }}>No tasks assigned.</li>
+              )}
+            </ul>
+            <button onClick={closeDetailedModal} style={{ marginTop: '20px', width: '100%' }}>
+              Close
+            </button>
+          </div>
+        </div>
+      )}
 
+      {/* Modal for Adding Task (if needed) */}
       {modalOpen && (
         <div
           className="modal-overlay"
@@ -252,6 +380,16 @@ const TasksCard = () => {
                   </select>
                 </label>
               </div>
+              <div>
+                <label>
+                  <input 
+                    type="checkbox" 
+                    checked={repeatDaily} 
+                    onChange={e => setRepeatDaily(e.target.checked)} 
+                  />{' '}
+                  Repeat Task Daily
+                </label>
+              </div>
               <button type="submit">Add Task</button>
               <button type="button" onClick={closeModal}>Cancel</button>
             </form>
@@ -259,7 +397,8 @@ const TasksCard = () => {
         </div>
       )}
 
-      {detailedModalOpen && selectedMember && (
+      {/* Custom Confirmation Modal for repeating tasks */}
+      {repeatConfirmOpen && selectedTask && (
         <div
           className="modal-overlay"
           style={{
@@ -268,41 +407,37 @@ const TasksCard = () => {
             left: 0,
             width: '100%',
             height: '100%',
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backgroundColor: 'rgba(0,0,0,0.5)',
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center'
           }}
         >
-          <div className="modal-content" style={{ backgroundColor: 'white', padding: '20px', borderRadius: '4px', maxWidth: '600px', width: '100%' }}>
-            <h3>{selectedMember}'s Detailed Task List</h3>
-            <ul className="task-list" style={{ listStyle: 'none', padding: 0 }}>
-              {tasksByMember[selectedMember].length > 0 ? (
-                tasksByMember[selectedMember].map(task => (
-                  <li key={task.id} className="task-item" style={{ marginBottom: '10px', padding: '10px', borderRadius: '4px', backgroundColor: '#f9f9f9' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <strong>{task.title}</strong>
-                        <div className="task-attributes" style={{ fontSize: '0.8em', color: '#555' }}>
-                          Due: {task.dueDate ? new Date(task.dueDate.seconds * 1000).toLocaleDateString() : 'N/A'}
-                          <br />
-                          Priority: {task.priority || 'N/A'} | Category: {task.category || 'N/A'} | Difficulty: {task.difficulty || 'N/A'}
-                        </div>
-                      </div>
-                      <button onClick={() => handleDelete(task.id)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-                        <FaTrashAlt style={{ color: 'red' }} />
-                      </button>
-                    </div>
-                  </li>
-                ))
-              ) : (
-                <li style={{ textAlign: 'center', color: '#999' }}>No tasks assigned.</li>
-              )}
-            </ul>
-            <button onClick={closeDetailedModal} style={{ marginTop: '20px' }}>Close</button>
+          <div
+            className="modal-content"
+            style={{
+              backgroundColor: 'white',
+              padding: '20px',
+              borderRadius: '4px',
+              maxWidth: '400px',
+              width: '100%'
+            }}
+          >
+            <p>
+              This is a repeating task. Would you like to <strong>Delete</strong> it permanently or <strong>Keep</strong> it (delete it for today and schedule it for tomorrow)?
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: '20px' }}>
+              <button onClick={handleConfirmDelete} style={{ padding: '10px 20px' }}>
+                Delete
+              </button>
+              <button onClick={handleConfirmKeep} style={{ padding: '10px 20px' }}>
+                Keep
+              </button>
+            </div>
           </div>
         </div>
       )}
+
     </div>
   );
 };
