@@ -7,7 +7,7 @@ const WeatherCard = () => {
   const [error, setError] = useState(null);
 
   // Default location; you can modify this or make it dynamic.
-  const city = 'Langhorne';
+  // const city = 'Langhorne'; // Commented out because it's not used
   // Make sure to set the correct API key in your environment variables
   const apiKey = process.env.REACT_APP_OPENWEATHER_API_KEY;
   const apiUrl = `https://api.openweathermap.org/data/2.5/weather?zip=19047,us&appid=${apiKey}&units=imperial`;
