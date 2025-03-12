@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
-import { collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { FaTrashAlt, FaStar } from 'react-icons/fa'; // Import the trash and star icons from react-icons
 import '../../styles/TasksCard.css';
 
@@ -42,6 +42,25 @@ const TasksCard = () => {
     };
 
     resetPoints();
+  }, []);
+
+  useEffect(() => {
+    const loadPoints = async () => {
+      try {
+        const scoresRef = doc(db, 'points', 'scores');
+        const scoresSnap = await getDoc(scoresRef);
+        if (scoresSnap.exists()) {
+          setPoints(scoresSnap.data());
+        } else {
+          const initialScores = { Mira: 0, Shea: 0, Daddy: 0, Mommy: 0 };
+          await setDoc(scoresRef, initialScores);
+          setPoints(initialScores);
+        }
+      } catch (error) {
+        console.error('Error loading scores:', error);
+      }
+    };
+    loadPoints();
   }, []);
 
   const openModalFor = (member) => {
@@ -163,23 +182,33 @@ const TasksCard = () => {
     }
   };
 
-  const handleTaskCheckbox = (taskId, member) => {
-    setCompletedTasks((prev) => {
-      const newCompletedTasks = { ...prev, [taskId]: !prev[taskId] };
-      const task = tasks.find(t => t.id === taskId);
-      if (newCompletedTasks[taskId]) {
-        setPoints((prevPoints) => ({
-          ...prevPoints,
-          [member]: (prevPoints[member] || 0) + (task.difficulty || 0)
-        }));
-      } else {
-        setPoints((prevPoints) => ({
-          ...prevPoints,
-          [member]: (prevPoints[member] || 0) - (task.difficulty || 0)
-        }));
-      }
-      return newCompletedTasks;
-    });
+  const handleTaskCheckbox = async (taskId, member) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+    const difficultyVal = task.difficulty || 0;
+    
+    // Determine if the task is being marked complete or undone.
+    const isCompleted = completedTasks[taskId];
+    // Toggle the checkbox state.
+    const newCompletedTasks = { ...completedTasks, [taskId]: !isCompleted };
+    setCompletedTasks(newCompletedTasks);
+  
+    // Calculate updated score.
+    let updatedScore = points[member] || 0;
+    if (!isCompleted) {
+      updatedScore += difficultyVal;
+    } else {
+      updatedScore -= difficultyVal;
+    }
+    
+    try {
+      // Update Firestore.
+      await updateDoc(doc(db, 'points', 'scores'), { [member]: updatedScore });
+      // Update local state.
+      setPoints(prev => ({ ...prev, [member]: updatedScore }));
+    } catch (error) {
+      console.error("Error updating score for", member, error);
+    }
   };
 
   const resetPointsForMember = (member) => {
