@@ -112,3 +112,34 @@ form > div {
 .task-item:hover .task-attributes {
   display: block;
 }
+
+.dashboard-top {
+  display: flex;
+  gap: 20px;
+  flex-wrap: nowrap;
+  justify-content: center;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Mobile styles */
+@media only screen and (max-width: 768px) {
+  /* On smaller screens, stack the dashboard cards in a column */
+  .dashboard-top {
+    flex-direction: column;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  
+  /* Force each card to take full width (with some margin) */
+  .dashboard-top .card,
+  .dashboard-bottom .card {
+    width: 90%;
+    margin: 10px auto;
+  }
+  
+  header.header {
+    flex-direction: column;
+    gap: 10px;
+  }
+}
