@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
 import { collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc } from 'firebase/firestore';
 import { FaTrashAlt, FaStar } from 'react-icons/fa'; // Import the trash and star icons from react-icons
+import './styles/TasksCard.css';
 
 const TasksCard = () => {
   const [title, setTitle] = useState('');
